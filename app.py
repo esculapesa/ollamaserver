@@ -1,6 +1,9 @@
+import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import subprocess
+
+logging.basicConfig(level=logging.DEBUG)  # Enable logging
 
 app = Flask(__name__)
 CORS(app)
@@ -8,13 +11,19 @@ CORS(app)
 @app.route('/query', methods=['POST'])
 def query_ollama():
     try:
-        # Parse JSON data from the request
         data = request.json
         prompt = data.get('prompt', '')
 
-        # Ensure prompt is a bytes object
-        if not isinstance(prompt, bytes):
-            prompt = prompt.encode()  # Encode to bytes only if it's not already
+        # Log the type and value of `prompt`
+        logging.debug(f"Original prompt type: {type(prompt)}")
+        logging.debug(f"Original prompt value: {prompt}")
+
+        # Ensure `prompt` is in bytes format
+        if isinstance(prompt, bytes):
+            logging.debug("Prompt is already bytes")
+        else:
+            logging.debug("Prompt is not bytes, encoding...")
+            prompt = prompt.encode()
 
         # Run the Ollama command
         result = subprocess.run(
@@ -22,21 +31,21 @@ def query_ollama():
             input=prompt,
             capture_output=True,
             text=True,
-            check=True  # Raise an error if the command fails
+            check=True
         )
 
-        # Capture and process the output
+        # Process the output
         response = result.stdout.strip()
+        logging.debug(f"Ollama response: {response}")
         return jsonify({'response': response})
 
     except subprocess.CalledProcessError as e:
-        # Handle subprocess errors (e.g., command execution issues)
+        logging.error(f"Subprocess error: {e.stderr}")
         return jsonify({'error': 'Failed to execute Ollama command', 'details': e.stderr}), 500
 
     except Exception as e:
-        # Handle unexpected errors
+        logging.error(f"Unexpected error: {str(e)}")
         return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=47929, debug=True)
-
