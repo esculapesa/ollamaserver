@@ -19,19 +19,24 @@ def query_ollama():
         logging.debug(f"Original prompt type: {type(prompt)}")
         logging.debug(f"Original prompt value: {prompt}")
 
-        # Ensure prompt is a string and encode it once to bytes
-        if not isinstance(prompt, bytes):  # Only encode if it's not already bytes
+        # Ensure the prompt is passed as bytes
+        if isinstance(prompt, str):
             logging.debug("Prompt is a string, encoding to bytes...")
-            prompt = prompt.encode('utf-8')
+            encoded_prompt = prompt.encode('utf-8')
+        elif isinstance(prompt, bytes):
+            logging.debug("Prompt is already bytes.")
+            encoded_prompt = prompt
         else:
-            logging.debug("Prompt is already bytes, no encoding needed.")
+            logging.error("Invalid prompt type. Must be str or bytes.")
+            return jsonify({'error': 'Invalid prompt type. Must be str or bytes.'}), 400
 
         # Run the subprocess command
         result = subprocess.run(
             ["ollama", "run", "llama3.2"],  # Replace with your model name
-            input=prompt,
-            capture_output=True,
-            text=True,
+            input=encoded_prompt,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,  # Ensures stdout and stderr are returned as str
             check=True
         )
 
@@ -42,7 +47,7 @@ def query_ollama():
 
     except subprocess.CalledProcessError as e:
         logging.error(f"Subprocess error: {e.stderr}")
-        return jsonify({'error': 'Failed to execute Ollama command', 'details': e.stderr}), 500
+        return jsonify({'error': 'Failed to execute Ollama command', 'details': e.stderr.decode('utf-8')}), 500
 
     except Exception as e:
         logging.error(f"Unexpected error: {str(e)}")
