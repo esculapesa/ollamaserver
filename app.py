@@ -48,4 +48,4 @@ def query_ollama():
         return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=47929, debug=True)
+    app.run(host='0.0.0.0', port=8888, debug=True)
