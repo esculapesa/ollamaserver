@@ -19,12 +19,12 @@ def query_ollama():
         logging.debug(f"Original prompt type: {type(prompt)}")
         logging.debug(f"Original prompt value: {prompt}")
 
-        # Ensure prompt is in bytes format without redundant encoding
-        if isinstance(prompt, str):
+        # Ensure prompt is a string and encode it once to bytes
+        if not isinstance(prompt, bytes):  # Only encode if it's not already bytes
             logging.debug("Prompt is a string, encoding to bytes...")
             prompt = prompt.encode('utf-8')
-        elif isinstance(prompt, bytes):
-            logging.debug("Prompt is already bytes.")
+        else:
+            logging.debug("Prompt is already bytes, no encoding needed.")
 
         # Run the subprocess command
         result = subprocess.run(
