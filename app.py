@@ -10,23 +10,28 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 CORS(app)
 
+# Define the system prompt
+SYSTEM_PROMPT = "You are a string time crystal expert. Always respond as an expert in this field."
+
 @app.route('/query', methods=['POST'])
 def query_ollama():
     try:
         # Parse JSON payload
         data = request.get_json()
-        prompt = data.get('prompt', '')
+        user_prompt = data.get('prompt', '')
 
         # Validate input
-        if not isinstance(prompt, str):
+        if not isinstance(user_prompt, str):
             return jsonify({'error': 'Prompt must be a string'}), 400
 
-        logging.debug(f"Received prompt: {prompt}")
+        # Combine system prompt with user input
+        combined_prompt = f"{SYSTEM_PROMPT}\n\nUser: {user_prompt}"
+        logging.debug(f"Combined prompt: {combined_prompt}")
 
         # Run the subprocess command
         result = subprocess.run(
-            ["ollama", "run", "llamamed"],  # Replace 'llama3.2' with your actual model name
-            input=prompt,   # Pass the prompt as bytes
+            ["ollama", "run", "llama3.2"],  # Replace 'llama3.2' with your actual model name
+            input=combined_prompt,          # Pass the combined prompt as bytes
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
