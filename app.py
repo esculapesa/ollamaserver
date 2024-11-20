@@ -25,7 +25,7 @@ def query_ollama():
 
         # Run the subprocess command
         result = subprocess.run(
-            ["ollama", "run", "llama3.2"],  # Replace 'llama3.2' with your actual model name
+            ["ollama", "run", "llamamed"],  # Replace 'llama3.2' with your actual model name
             input=prompt,   # Pass the prompt as bytes
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
