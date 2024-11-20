@@ -1,9 +1,10 @@
-import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import subprocess
+import logging
 
-logging.basicConfig(level=logging.DEBUG)  # Enable logging
+# Enable debug logging
+logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 CORS(app)
@@ -14,20 +15,20 @@ def query_ollama():
         data = request.json
         prompt = data.get('prompt', '')
 
-        # Log the type and value of `prompt`
+        # Log the original prompt type and value
         logging.debug(f"Original prompt type: {type(prompt)}")
         logging.debug(f"Original prompt value: {prompt}")
 
-        # Ensure `prompt` is in bytes format
-        if isinstance(prompt, bytes):
-            logging.debug("Prompt is already bytes")
-        else:
-            logging.debug("Prompt is not bytes, encoding...")
-            prompt = prompt.encode()
+        # Ensure prompt is in bytes format without redundant encoding
+        if isinstance(prompt, str):
+            logging.debug("Prompt is a string, encoding to bytes...")
+            prompt = prompt.encode('utf-8')
+        elif isinstance(prompt, bytes):
+            logging.debug("Prompt is already bytes.")
 
-        # Run the Ollama command
+        # Run the subprocess command
         result = subprocess.run(
-            ["ollama", "run", "llama3.2"],  # Replace 'llama3.2' with your model name
+            ["ollama", "run", "llama3.2"],  # Replace with your model name
             input=prompt,
             capture_output=True,
             text=True,
