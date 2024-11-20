@@ -25,11 +25,12 @@ def query_ollama():
 
         # Run the subprocess command
         result = subprocess.run(
-            ["echo", prompt],  # Replace "echo" with your actual command
+            ["ollama", "run", "llama3.2"],  # Replace 'llama3.2' with your actual model name
+            input=prompt.encode('utf-8'),   # Pass the prompt as bytes
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,  # Ensures output is returned as a string
-            check=True  # Raise exception on non-zero exit codes
+            text=True,
+            check=True
         )
 
         # Capture and log the subprocess output
