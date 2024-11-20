@@ -2,9 +2,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import subprocess
 import logging
-import requests
-import base64
-import os
+from openai import OpenAI
+client = OpenAI()
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -58,28 +57,21 @@ def query_ollama():
         logging.error(f"Unexpected error: {str(e)}")
         return jsonify({'error': 'Internal Server Error', 'details': str(e)}), 500
 
-
 def generate_image(prompt):
     """Generate an image based on the text response."""
     try:
         # Replace with the image generation API of your choice
         # Example: Using DALL·E or Stable Diffusion API
-        response = requests.post(
-            "https://api.openai.com/v1/images/generations",  # Example for DALL·E
-            headers={
-                "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
-            },
-            json={
-                "prompt": prompt,
-                "n": 1,
-                "size": "512x512"
-            }
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1024x1024",
+            quality="standard",
+            n=1,
         )
-        response.raise_for_status()
-        image_data = response.json()
 
         # Return the URL of the generated image
-        return image_data["data"][0]["url"]
+        return response.data[0].url
     except Exception as e:
         logging.error(f"Error generating image: {str(e)}")
         return None
