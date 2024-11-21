@@ -3,8 +3,6 @@ from flask_cors import CORS
 import subprocess
 import threading
 import time
-import os
-import requests
 import logging
 from openai import OpenAI
 client = OpenAI()
@@ -52,7 +50,7 @@ def query_ollama():
 
         # Start a thread to generate the image asynchronously
         image_key = str(time.time())  # Unique key for the image
-        threading.Thread(target=generate_image, args=(text_response, image_key)).start()
+        threading.Thread(target=generate_image, args=(text_response, image_key), daemon=True).start()
 
         # Return the text response and a unique image placeholder key
         return jsonify({'response': text_response, 'image_key': image_key})
@@ -79,7 +77,7 @@ def get_image(image_key):
 def generate_image(prompt, image_key):
     """Generate an image and store the result."""
     try:
-                # If the response is too long, summarize it
+        # If the response is too long, summarize it
         if len(prompt) > 1000:
             logging.debug("Response exceeds 1000 characters. Requesting a summary...")
             summary_prompt = f"Please summarize this response to under 1000 characters:\n\n{prompt}"
@@ -93,7 +91,7 @@ def generate_image(prompt, image_key):
             )
             prompt = summary_result.stdout.strip()
         
-        logging.debug("Generating image from prompt: ", prompt[:100])
+        logging.debug(f"Generating image from prompt: {prompt[:100]}")
         response = client.images.generate(
             model="dall-e-3",
             prompt=prompt,
@@ -102,17 +100,12 @@ def generate_image(prompt, image_key):
             n=1,
         )
 
-        logging.debug(f"image url: {response.data[0].url}")
+        logging.debug(f"Image URL: {response.data[0].url}")
 
-
-        # Return the URL of the generated image
-        return response.data[0].url
+        # Store the URL of the generated image
+        image_store[image_key] = response.data[0].url
     except Exception as e:
         logging.error(f"Error generating image: {str(e)}")
-        return None
-
-
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8888, debug=True)
