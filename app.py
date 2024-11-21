@@ -1,19 +1,20 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import subprocess
+import threading
+import time
+import os
+import requests
 import logging
-from openai import OpenAI
-client = OpenAI()
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Initialize Flask app and CORS
 app = Flask(__name__)
 CORS(app)
 
-# Define the system prompt
-SYSTEM_PROMPT = "You are a string time crystal expert. Always respond as an expert in this field."
+# Dictionary to store generated images temporarily
+image_store = {}
 
 @app.route('/query', methods=['POST'])
 def query_ollama():
@@ -27,12 +28,13 @@ def query_ollama():
             return jsonify({'error': 'Prompt must be a string'}), 400
 
         # Combine system prompt with user input
-        combined_prompt = f"{SYSTEM_PROMPT}\n\nUser: {user_prompt}"
+        system_prompt = "You are a string time crystal expert."
+        combined_prompt = f"{system_prompt}\n\nUser: {user_prompt}"
         logging.debug(f"Combined prompt: {combined_prompt}")
 
-        # Run the text subprocess command
+        # Run the subprocess command to generate text
         result = subprocess.run(
-            ["ollama", "run", "llama3.2"],  # Replace 'llama3.2' with your actual model name
+            ["ollama", "run", "llama3.2"],  # Replace 'llama3.2' with your model name
             input=combined_prompt,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -40,14 +42,16 @@ def query_ollama():
             check=True
         )
 
-        # Capture and log the text subprocess output
+        # Capture and log the subprocess output
         text_response = result.stdout.strip()
         logging.debug(f"Subprocess text response: {text_response}")
 
-        # Generate an image using DALL·E or other API
-        image_url = generate_image(text_response)
+        # Start a thread to generate the image asynchronously
+        image_key = str(time.time())  # Unique key for the image
+        threading.Thread(target=generate_image, args=(text_response, image_key)).start()
 
-        return jsonify({'response': text_response, 'image_url': image_url})
+        # Return the text response and a unique image placeholder key
+        return jsonify({'response': text_response, 'image_key': image_key})
 
     except subprocess.CalledProcessError as e:
         logging.error(f"Subprocess error: {e.stderr}")
@@ -57,24 +61,43 @@ def query_ollama():
         logging.error(f"Unexpected error: {str(e)}")
         return jsonify({'error': 'Internal Server Error', 'details': str(e)}), 500
 
-def generate_image(prompt):
-    """Generate an image based on the text response."""
-    try:
-        # Replace with the image generation API of your choice
-        # Example: Using DALL·E or Stable Diffusion API
-        response = client.images.generate(
-            model="dall-e-3",
-            prompt=prompt,
-            size="1024x1024",
-            quality="standard",
-            n=1,
-        )
 
-        # Return the URL of the generated image
-        return response.data[0].url
+@app.route('/image/<image_key>', methods=['GET'])
+def get_image(image_key):
+    """Fetch the generated image for the given key."""
+    image_url = image_store.get(image_key)
+    if image_url:
+        return jsonify({'image_url': image_url})
+    else:
+        return jsonify({'status': 'loading'}), 202
+
+
+def generate_image(prompt, image_key):
+    """Generate an image and store the result."""
+    try:
+        logging.debug(f"Generating image for prompt: {prompt}")
+        response = requests.post(
+            "https://api.openai.com/v1/images/generations",  # Replace with your API endpoint
+            headers={
+                "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
+            },
+            json={
+                "prompt": prompt,
+                "n": 1,
+                "size": "512x512"
+            }
+        )
+        response.raise_for_status()
+        image_data = response.json()
+        image_url = image_data["data"][0]["url"]
+
+        # Store the image URL
+        image_store[image_key] = image_url
+        logging.debug(f"Image generated: {image_url}")
+
     except Exception as e:
         logging.error(f"Error generating image: {str(e)}")
-        return None
+        image_store[image_key] = None  # Mark as failed
 
 
 if __name__ == '__main__':
