@@ -77,8 +77,7 @@ def get_image(image_key):
 def generate_image(prompt, image_key):
     """Generate an image and store the result."""
     try:
-
-        # If the response is too long, summarize it
+                # If the response is too long, summarize it
         if len(prompt) > 1000:
             logging.debug("Response exceeds 1000 characters. Requesting a summary...")
             summary_prompt = f"Please summarize this response to under 1000 characters:\n\n{prompt}"
@@ -91,30 +90,22 @@ def generate_image(prompt, image_key):
                 check=True
             )
             prompt = summary_result.stdout.strip()
-
         logging.debug(f"Generating image for prompt: {prompt}")
-        response = requests.post(
-            "https://api.openai.com/v1/images/generations",
-            headers={
-                "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
-            },
-            json={
-                "prompt": prompt,
-                "n": 1,
-                "size": "512x512"
-            }
+        response = openai.Image.create(
+            prompt=prompt,
+            n=1,
+            size="512x512"  # Choose from "256x256", "512x512", or "1024x1024"
         )
-        response.raise_for_status()
-        image_data = response.json()
-        image_url = image_data["data"][0]["url"]
+        image_url = response['data'][0]['url']
 
         # Store the image URL
         image_store[image_key] = image_url
         logging.debug(f"Image generated: {image_url}")
 
-    except Exception as e:
+    except openai.error.OpenAIError as e:
         logging.error(f"Error generating image: {str(e)}")
         image_store[image_key] = None  # Mark as failed
+
 
 
 if __name__ == '__main__':
