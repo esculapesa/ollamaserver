@@ -5,6 +5,7 @@ import threading
 import time
 import logging
 from openai import OpenAI
+import requests
 client = OpenAI()
 
 # Configure logging
@@ -69,7 +70,16 @@ def get_image(image_key):
     """Fetch the generated image for the given key."""
     image_url = image_store.get(image_key)
     if image_url:
-        return jsonify({'image_url': image_url})
+        # Verify if the image URL is still valid
+        try:
+            response = requests.head(image_url)
+            if response.status_code == 200:
+                return jsonify({'image_url': image_url})
+            else:
+                return jsonify({'status': 'error', 'message': 'Image URL is no longer valid'}), 500
+        except requests.RequestException as e:
+            logging.error(f"Error fetching image URL: {str(e)}")
+            return jsonify({'status': 'error', 'message': 'Failed to verify image URL'}), 500
     else:
         return jsonify({'status': 'loading'}), 202
 
@@ -100,12 +110,15 @@ def generate_image(prompt, image_key):
             n=1,
         )
 
-        logging.debug(f"Image URL: {response.data[0].url}")
+        image_url = response.data[0].url
+        logging.debug(f"Image URL: {image_url}")
 
         # Store the URL of the generated image
-        image_store[image_key] = response.data[0].url
+        image_store[image_key] = image_url
     except Exception as e:
         logging.error(f"Error generating image: {str(e)}")
+        with image_store_lock:
+            image_store[image_key] = {'url': None, 'status': 'failed'}
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8888, debug=True)
