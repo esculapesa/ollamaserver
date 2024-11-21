@@ -81,7 +81,7 @@ def generate_image(prompt, image_key):
         # If the response is too long, summarize it
         if len(prompt) > 1000:
             logging.debug("Response exceeds 1000 characters. Requesting a summary...")
-            summary_prompt = f"Please summarize this response to under 1000 characters:\n\n{text_response}"
+            summary_prompt = f"Please summarize this response to under 1000 characters:\n\n{prompt}"
             summary_result = subprocess.run(
                 ["ollama", "run", "llama3.2"],  # Replace with your model name
                 input=summary_prompt,
