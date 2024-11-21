@@ -6,6 +6,7 @@ import time
 import os
 import requests
 import logging
+import openai
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
