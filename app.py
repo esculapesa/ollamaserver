@@ -102,6 +102,11 @@ def generate_image(prompt, image_key):
             n=1,
         )
 
+        logging.debug("image response: ", response)
+        logging.debug("image data: ", response.data)
+        logging.debug("image url: ", response.data[0].url)
+
+
         # Return the URL of the generated image
         return response.data[0].url
     except Exception as e:
