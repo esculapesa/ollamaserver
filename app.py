@@ -6,7 +6,8 @@ import time
 import os
 import requests
 import logging
-import openai
+from openai import OpenAI
+client = OpenAI()
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -91,21 +92,20 @@ def generate_image(prompt, image_key):
                 check=True
             )
             prompt = summary_result.stdout.strip()
-        logging.debug(f"Generating image for prompt: {prompt}")
-        response = openai.Image.create(
+        response = client.images.generate(
+            model="dall-e-3",
             prompt=prompt,
+            size="1024x1024",
+            quality="standard",
             n=1,
-            size="512x512"  # Choose from "256x256", "512x512", or "1024x1024"
         )
-        image_url = response['data'][0]['url']
 
-        # Store the image URL
-        image_store[image_key] = image_url
-        logging.debug(f"Image generated: {image_url}")
-
-    except openai.error.OpenAIError as e:
+        # Return the URL of the generated image
+        return response.data[0].url
+    except Exception as e:
         logging.error(f"Error generating image: {str(e)}")
-        image_store[image_key] = None  # Mark as failed
+        return None
+
 
 
 
