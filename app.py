@@ -28,7 +28,9 @@ def query_ollama():
             return jsonify({'error': 'Prompt must be a string'}), 400
 
         # Combine system prompt with user input
-        system_prompt = "You are a string time crystal expert. Always respond as an expert in this field, and keep your answers concise and under 1000 characters."
+        system_prompt = (
+            "You are a string time crystal expert. Always respond as an expert in this field"
+        )
         combined_prompt = f"{system_prompt}\n\nUser: {user_prompt}"
         logging.debug(f"Combined prompt: {combined_prompt}")
 
@@ -45,21 +47,6 @@ def query_ollama():
         # Capture the subprocess output
         text_response = result.stdout.strip()
         logging.debug(f"Ollama text response: {text_response}")
-
-        # If the response is too long, summarize it
-        if len(text_response) > 1000:
-            logging.debug("Response exceeds 1000 characters. Requesting a summary...")
-            summary_prompt = f"Please summarize this response to under 1000 characters:\n\n{text_response}"
-            summary_result = subprocess.run(
-                ["ollama", "run", "llama3.2"],  # Replace with your model name
-                input=summary_prompt,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=True
-            )
-            text_response = summary_result.stdout.strip()
-            logging.debug(f"Summarized response: {text_response}")
 
         # Start a thread to generate the image asynchronously
         image_key = str(time.time())  # Unique key for the image
@@ -90,6 +77,21 @@ def get_image(image_key):
 def generate_image(prompt, image_key):
     """Generate an image and store the result."""
     try:
+
+        # If the response is too long, summarize it
+        if len(prompt) > 1000:
+            logging.debug("Response exceeds 1000 characters. Requesting a summary...")
+            summary_prompt = f"Please summarize this response to under 1000 characters:\n\n{text_response}"
+            summary_result = subprocess.run(
+                ["ollama", "run", "llama3.2"],  # Replace with your model name
+                input=summary_prompt,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True
+            )
+            prompt = summary_result.stdout.strip()
+
         logging.debug(f"Generating image for prompt: {prompt}")
         response = requests.post(
             "https://api.openai.com/v1/images/generations",
