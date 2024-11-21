@@ -76,16 +76,20 @@ def generate_image(prompt, image_key):
     """Generate an image and store the result."""
     try:
         logging.debug(f"Generating image for prompt: {prompt}")
+        
+        payload = {
+            "prompt": prompt,
+            "n": 1,
+            "size": "512x512"
+        }
+        logging.debug(f"Payload: {payload}")
+
         response = requests.post(
-            "https://api.openai.com/v1/images/generations",  # Replace with your API endpoint
+            "https://api.openai.com/v1/images/generations",
             headers={
                 "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
             },
-            json={
-                "prompt": prompt,
-                "n": 1,
-                "size": "512x512"
-            }
+            json=payload
         )
         response.raise_for_status()
         image_data = response.json()
@@ -95,8 +99,8 @@ def generate_image(prompt, image_key):
         image_store[image_key] = image_url
         logging.debug(f"Image generated: {image_url}")
 
-    except Exception as e:
-        logging.error(f"Error generating image: {str(e)}")
+    except requests.exceptions.HTTPError as e:
+        logging.error(f"Error generating image: {e.response.text}")
         image_store[image_key] = None  # Mark as failed
 
 
