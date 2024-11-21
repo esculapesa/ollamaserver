@@ -92,6 +92,8 @@ def generate_image(prompt, image_key):
                 check=True
             )
             prompt = summary_result.stdout.strip()
+        
+        logging.debug("Generating image from prompt: ", prompt[:100])
         response = client.images.generate(
             model="dall-e-3",
             prompt=prompt,
