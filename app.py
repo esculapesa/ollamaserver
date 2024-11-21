@@ -121,4 +121,5 @@ def generate_image(prompt, image_key):
             image_store[image_key] = {'url': None, 'status': 'failed'}
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8888, debug=True)
+    app.run(host='0.0.0.0', port=8888, debug=True, ssl_context=('/etc/letsencrypt/live/dltai.uk/fullchain.pem', 
+                                                    '/etc/letsencrypt/live/dltai.uk/privkey.pem'))
